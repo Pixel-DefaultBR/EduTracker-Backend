@@ -4,41 +4,56 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Banco de dados In-Memory (troque por SQLite com UseSqlite se preferir)
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseInMemoryDatabase("ControleAusenciaDb"));
+// Railway injeta DATABASE_URL no formato postgres://user:pass@host:port/db
+// Convertemos para o formato aceito pelo Npgsql
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+string connectionString;
+
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+else
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+}
+
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 // Serviços
 builder.Services.AddScoped<FaltaService>();
-builder.Services.AddScoped<IEmailService, EmailServiceMock>(); // troque por EmailServiceSmtp para produção
+builder.Services.AddScoped<IEmailService, EmailServiceMock>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS para o frontend React (localhost:5173 é o padrão do Vite)
+// CORS — aceita qualquer origem (Railway gera URLs dinâmicas)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
-        policy.WithOrigins("http://localhost:5173")
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
 
+// Railway define a porta via variável PORT
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 var app = builder.Build();
 
-// Seed do banco In-Memory
+// Aplica migrations automaticamente ao iniciar
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("FrontendPolicy");
 app.UseAuthorization();
