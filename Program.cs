@@ -45,11 +45,29 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 
-// Aplica migrations automaticamente ao iniciar
+// Aplica migrations automaticamente com retry (aguarda o Postgres subir)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<AppDbContext>>();
+
+    var retries = 10;
+    while (retries > 0)
+    {
+        try
+        {
+            db.Database.Migrate();
+            logger.LogInformation("Migrations aplicadas com sucesso.");
+            break;
+        }
+        catch (Exception ex)
+        {
+            retries--;
+            logger.LogWarning("Banco não disponível. Tentativas restantes: {Retries}. Erro: {Msg}", retries, ex.Message);
+            if (retries == 0) throw;
+            Thread.Sleep(3000);
+        }
+    }
 }
 
 app.UseSwagger();
