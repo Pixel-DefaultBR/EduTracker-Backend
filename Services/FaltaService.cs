@@ -57,6 +57,14 @@ public class FaltaService
             .SumAsync(r => r.QuantidadeFaltas);
     }
 
+    public async Task<Aluno> CriarAlunoAsync(string nome, string email)
+    {
+        var aluno = new Aluno { Nome = nome, Email = email };
+        _db.Alunos.Add(aluno);
+        await _db.SaveChangesAsync();
+        return aluno;
+    }
+
     public async Task<List<Aluno>> ListarAlunosAsync()
     {
         return await _db.Alunos.ToListAsync();

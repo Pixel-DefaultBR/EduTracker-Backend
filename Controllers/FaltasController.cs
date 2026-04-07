@@ -22,6 +22,18 @@ public class FaltasController : ControllerBase
         return Ok(alunos);
     }
 
+    // POST api/faltas/alunos
+    // Body: { "nome": "João", "email": "joao@escola.com" }
+    [HttpPost("alunos")]
+    public async Task<IActionResult> CriarAluno([FromBody] CriarAlunoRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Nome) || string.IsNullOrWhiteSpace(request.Email))
+            return BadRequest(new { mensagem = "Nome e e-mail são obrigatórios." });
+
+        var aluno = await _faltaService.CriarAlunoAsync(request.Nome, request.Email);
+        return CreatedAtAction(nameof(ObterResumo), new { id = aluno.Id }, aluno);
+    }
+
     // GET api/faltas/alunos/{id}/resumo
     [HttpGet("alunos/{id}/resumo")]
     public async Task<IActionResult> ObterResumo(int id)
@@ -63,3 +75,4 @@ public class FaltasController : ControllerBase
 }
 
 public record RegistrarFaltaRequest(int AlunoId, string Data, int QuantidadeFaltas);
+public record CriarAlunoRequest(string Nome, string Email);
