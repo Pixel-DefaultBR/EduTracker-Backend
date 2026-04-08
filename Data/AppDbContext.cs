@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Aluno> Alunos => Set<Aluno>();
     public DbSet<RegistroFalta> RegistrosFaltas => Set<RegistroFalta>();
+    public DbSet<Configuracao> Configuracoes => Set<Configuracao>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

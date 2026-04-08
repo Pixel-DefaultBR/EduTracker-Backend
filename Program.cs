@@ -24,7 +24,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connect
 
 // Serviços
 builder.Services.AddScoped<FaltaService>();
-builder.Services.AddScoped<IEmailService, EmailServiceMock>();
+builder.Services.AddScoped<DiscordService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
