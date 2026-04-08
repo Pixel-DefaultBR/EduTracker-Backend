@@ -4,6 +4,22 @@ API REST desenvolvida em **ASP.NET Core (.NET 9)** para controle de ausências e
 
 ---
 
+## Por que essas tecnologias?
+
+### C# / ASP.NET Core
+C# foi escolhido por ser uma linguagem versátil, fortemente tipada e orientada a objetos, o que torna o código mais organizado, legível e fácil de manter. Além disso, o ecossistema .NET entrega performance superior a diversas outras linguagens de backend, sendo amplamente utilizado em sistemas corporativos de grande escala. A orientação a objetos facilita a modelagem das regras de negócio de forma clara e coesa.
+
+### React
+O React foi escolhido por sua integração natural com APIs REST e pela forma como escala junto ao backend. Com componentes reutilizáveis e gerenciamento de estado simples, é possível evoluir a interface do sistema sem aumentar a complexidade — tornando a combinação C# + React uma stack sólida para projetos que precisam crescer.
+
+### PostgreSQL
+O PostgreSQL foi escolhido pelos mesmos princípios: é robusto, open source, altamente escalável e amplamente suportado por provedores cloud. Suporta bem o crescimento do volume de dados e tem excelente integração com o Entity Framework Core via Npgsql.
+
+### Discord como vetor de notificação
+Para este protótipo, o Discord foi utilizado como canal de envio de alertas por ser simples de configurar via Webhook e suficiente para validar o fluxo de notificação. A ideia é que, com a evolução do projeto, as notificações sejam migradas para um servidor **SMTP** dedicado, permitindo o envio formal de e-mails para responsáveis e coordenação escolar.
+
+---
+
 ## Tecnologias
 
 | Tecnologia | Uso |
