@@ -6,7 +6,7 @@ namespace ControleAusencia.Services;
 
 public class FaltaService
 {
-    private const int LimiteFaltasSemana = 10;
+    private const int LimiteFaltasSemana = 5;
 
     private readonly AppDbContext _db;
     private readonly DiscordService _discordService;
