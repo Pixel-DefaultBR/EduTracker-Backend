@@ -70,10 +70,11 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+app.UseCors("FrontendPolicy");
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors("FrontendPolicy");
 app.UseAuthorization();
 app.MapControllers();
 
