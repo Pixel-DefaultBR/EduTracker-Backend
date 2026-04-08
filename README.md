@@ -149,7 +149,7 @@ Retorna o resumo de faltas de um aluno nos últimos 7 dias.
 #### `POST /api/faltas`
 Registra as faltas de um aluno em uma data específica.
 
-Após o registro, o sistema calcula automaticamente o total de faltas dos **últimos 7 dias**. Se o total atingir ou ultrapassar **10 faltas**, um alerta é enviado ao canal do Discord configurado.
+Após o registro, o sistema calcula automaticamente o total de faltas dos **últimos 7 dias**. Se o total atingir ou ultrapassar **7 faltas**, um alerta é enviado ao canal do Discord configurado.
 
 **Body:**
 ```json
@@ -197,7 +197,7 @@ Salva ou atualiza a URL do webhook do Discord.
 ## Regras de Negócio
 
 - O sistema considera os **últimos 7 dias** incluindo o dia do registro atual.
-- O **limite padrão** é de **10 faltas** em 7 dias (constante `LimiteFaltasSemana` em `FaltaService.cs`).
+- O **limite padrão** é de **7 faltas** em 7 dias (constante `LimiteFaltasSemana` em `FaltaService.cs`).
 - Ao atingir o limite, o `DiscordService` consulta a URL do webhook no banco e envia uma mensagem no formato:
   > ⚠️ **Alerta de Faltas** | O aluno **[Nome]** atingiu **[N] faltas** nos últimos 7 dias.
 - Se nenhum webhook estiver configurado, o alerta é ignorado e um aviso é registrado nos logs.
