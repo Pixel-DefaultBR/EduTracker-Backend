@@ -1,3 +1,7 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+
 namespace ControleAusencia.Services;
 
 public interface IEmailService
@@ -5,70 +9,52 @@ public interface IEmailService
     Task EnviarAlertaFaltasAsync(string destinatario, string nomeAluno, int totalFaltas);
 }
 
-/// <summary>
-/// Implementação de mock: imprime o e-mail no console.
-/// Para produção, substitua pelo SmtpClient ou um provider como SendGrid.
-/// </summary>
-public class EmailServiceMock : IEmailService
-{
-    private readonly ILogger<EmailServiceMock> _logger;
-
-    public EmailServiceMock(ILogger<EmailServiceMock> logger)
-    {
-        _logger = logger;
-    }
-
-    public Task EnviarAlertaFaltasAsync(string destinatario, string nomeAluno, int totalFaltas)
-    {
-        _logger.LogWarning(
-            "[E-MAIL SIMULADO] Para: {Destinatario} | Assunto: Alerta de Faltas | " +
-            "Mensagem: O aluno {NomeAluno} atingiu {TotalFaltas} faltas nos últimos 7 dias.",
-            destinatario, nomeAluno, totalFaltas);
-
-        Console.WriteLine("======================================");
-        Console.WriteLine($"  [E-MAIL SIMULADO]");
-        Console.WriteLine($"  Para: {destinatario}");
-        Console.WriteLine($"  Assunto: Alerta de Faltas Excessivas");
-        Console.WriteLine($"  Mensagem: O aluno {nomeAluno} atingiu {totalFaltas} faltas nos últimos 7 dias.");
-        Console.WriteLine("======================================");
-
-        return Task.CompletedTask;
-    }
-}
-
-/// <summary>
-/// Implementação real via SMTP. Configure as variáveis de ambiente antes de usar:
-/// SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM
-/// </summary>
-public class EmailServiceSmtp : IEmailService
+public class EmailServiceResend : IEmailService
 {
     private readonly IConfiguration _config;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<EmailServiceResend> _logger;
 
-    public EmailServiceSmtp(IConfiguration config)
+    public EmailServiceResend(IConfiguration config, IHttpClientFactory httpClientFactory, ILogger<EmailServiceResend> logger)
     {
         _config = config;
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     public async Task EnviarAlertaFaltasAsync(string destinatario, string nomeAluno, int totalFaltas)
     {
-        var host = _config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host não configurado.");
-        var port = int.Parse(_config["Smtp:Port"] ?? "587");
-        var user = _config["Smtp:User"] ?? string.Empty;
-        var pass = _config["Smtp:Password"] ?? string.Empty;
-        var from = _config["Smtp:From"] ?? user;
+        var apiKey = _config["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend:ApiKey não configurado.");
+        var from = _config["Resend:From"] ?? throw new InvalidOperationException("Resend:From não configurado.");
 
-        using var client = new System.Net.Mail.SmtpClient(host, port)
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+        var payload = new
         {
-            Credentials = new System.Net.NetworkCredential(user, pass),
-            EnableSsl = true
+            from,
+            to = new[] { destinatario },
+            subject = "Alerta: Limite de Faltas Atingido",
+            html = $"""
+                <p>Prezado(a),</p>
+                <p>O aluno <strong>{nomeAluno}</strong> atingiu <strong>{totalFaltas} faltas</strong> nos últimos 7 dias.</p>
+                <p>Sistema de Controle de Ausência Escolar.</p>
+                """
         };
 
-        var mensagem = new System.Net.Mail.MailMessage(from, destinatario)
-        {
-            Subject = "Alerta: Limite de Faltas Atingido",
-            Body = $"Prezado(a),\n\nO aluno {nomeAluno} atingiu {totalFaltas} faltas nos últimos 7 dias.\n\nSistema de Controle de Ausência Escolar."
-        };
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        await client.SendMailAsync(mensagem);
+        var response = await client.PostAsync("https://api.resend.com/emails", content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Falha ao enviar email via Resend. Status: {Status}. Detalhes: {Body}", response.StatusCode, body);
+        }
+        else
+        {
+            _logger.LogInformation("Email de alerta enviado via Resend para {Destinatario}.", destinatario);
+        }
     }
 }

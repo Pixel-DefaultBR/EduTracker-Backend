@@ -9,13 +9,13 @@ public class FaltaService
     private const int LimiteFaltasSemana = 7;
 
     private readonly AppDbContext _db;
-    private readonly DiscordService _discordService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<FaltaService> _logger;
 
-    public FaltaService(AppDbContext db, DiscordService discordService, ILogger<FaltaService> logger)
+    public FaltaService(AppDbContext db, IEmailService emailService, ILogger<FaltaService> logger)
     {
         _db = db;
-        _discordService = discordService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -42,7 +42,7 @@ public class FaltaService
 
         if (totalUltimos7Dias >= LimiteFaltasSemana)
         {
-            await _discordService.EnviarAlertaAsync(aluno.Nome, totalUltimos7Dias);
+            await _emailService.EnviarAlertaFaltasAsync(aluno.Email, aluno.Nome, totalUltimos7Dias);
         }
 
         return registro;
