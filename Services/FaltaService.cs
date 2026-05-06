@@ -42,7 +42,14 @@ public class FaltaService
 
         if (totalUltimos7Dias >= LimiteFaltasSemana)
         {
-            await _emailService.EnviarAlertaFaltasAsync(aluno.Email, aluno.Nome, totalUltimos7Dias);
+            try
+            {
+                await _emailService.EnviarAlertaFaltasAsync(aluno.Email, aluno.Nome, totalUltimos7Dias);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao enviar email de alerta para o aluno {AlunoId}.", alunoId);
+            }
         }
 
         return registro;

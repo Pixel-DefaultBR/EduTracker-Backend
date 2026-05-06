@@ -29,7 +29,8 @@ public class EmailServiceSmtp : IEmailService
         using var client = new SmtpClient(host, port)
         {
             Credentials = new System.Net.NetworkCredential(user, pass),
-            EnableSsl = true
+            EnableSsl = true,
+            Timeout = 10000
         };
 
         var mensagem = new MailMessage(from, destinatario)
