@@ -48,6 +48,24 @@ public class FaltasController : ControllerBase
         }
     }
 
+    // PUT api/faltas/alunos/{id}
+    [HttpPut("alunos/{id}")]
+    public async Task<IActionResult> EditarAluno(int id, [FromBody] EditarAlunoRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Nome) || string.IsNullOrWhiteSpace(request.Email))
+            return BadRequest(new { mensagem = "Nome e e-mail são obrigatórios." });
+
+        try
+        {
+            var aluno = await _faltaService.EditarAlunoAsync(id, request.Nome, request.Email);
+            return Ok(aluno);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+    }
+
     // GET api/faltas/alunos/{id}/resumo
     [HttpGet("alunos/{id}/resumo")]
     public async Task<IActionResult> ObterResumo(int id)
@@ -89,3 +107,4 @@ public class FaltasController : ControllerBase
 
 public record RegistrarFaltaRequest(int AlunoId, string Data, int QuantidadeFaltas);
 public record CriarAlunoRequest(string Nome, string Email);
+public record EditarAlunoRequest(string Nome, string Email);
