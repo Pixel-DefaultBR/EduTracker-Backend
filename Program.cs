@@ -23,9 +23,10 @@ else
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 // Serviços
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<FaltaService>();
 builder.Services.AddScoped<DiscordService>();
-builder.Services.AddScoped<IEmailService, EmailServiceSmtp>();
+builder.Services.AddScoped<IEmailService, EmailServiceResend>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
