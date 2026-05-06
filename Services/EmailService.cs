@@ -1,6 +1,4 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+using System.Net.Mail;
 
 namespace ControleAusencia.Services;
 
@@ -9,52 +7,39 @@ public interface IEmailService
     Task EnviarAlertaFaltasAsync(string destinatario, string nomeAluno, int totalFaltas);
 }
 
-public class EmailServiceResend : IEmailService
+public class EmailServiceSmtp : IEmailService
 {
     private readonly IConfiguration _config;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<EmailServiceResend> _logger;
+    private readonly ILogger<EmailServiceSmtp> _logger;
 
-    public EmailServiceResend(IConfiguration config, IHttpClientFactory httpClientFactory, ILogger<EmailServiceResend> logger)
+    public EmailServiceSmtp(IConfiguration config, ILogger<EmailServiceSmtp> logger)
     {
         _config = config;
-        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
     public async Task EnviarAlertaFaltasAsync(string destinatario, string nomeAluno, int totalFaltas)
     {
-        var apiKey = _config["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend:ApiKey não configurado.");
-        var from = _config["Resend:From"] ?? throw new InvalidOperationException("Resend:From não configurado.");
+        var host = _config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host não configurado.");
+        var port = int.Parse(_config["Smtp:Port"] ?? "587");
+        var user = _config["Smtp:User"] ?? throw new InvalidOperationException("Smtp:User não configurado.");
+        var pass = _config["Smtp:Password"] ?? throw new InvalidOperationException("Smtp:Password não configurado.");
+        var from = _config["Smtp:From"] ?? user;
 
-        var client = _httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-        var payload = new
+        using var client = new SmtpClient(host, port)
         {
-            from,
-            to = new[] { destinatario },
-            subject = "Alerta: Limite de Faltas Atingido",
-            html = $"""
-                <p>Prezado(a),</p>
-                <p>O aluno <strong>{nomeAluno}</strong> atingiu <strong>{totalFaltas} faltas</strong> nos últimos 7 dias.</p>
-                <p>Sistema de Controle de Ausência Escolar.</p>
-                """
+            Credentials = new System.Net.NetworkCredential(user, pass),
+            EnableSsl = true
         };
 
-        var json = JsonSerializer.Serialize(payload);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PostAsync("https://api.resend.com/emails", content);
-
-        if (!response.IsSuccessStatusCode)
+        var mensagem = new MailMessage(from, destinatario)
         {
-            var body = await response.Content.ReadAsStringAsync();
-            _logger.LogError("Falha ao enviar email via Resend. Status: {Status}. Detalhes: {Body}", response.StatusCode, body);
-        }
-        else
-        {
-            _logger.LogInformation("Email de alerta enviado via Resend para {Destinatario}.", destinatario);
-        }
+            Subject = "Alerta: Limite de Faltas Atingido",
+            Body = $"Prezado(a),\n\nO aluno {nomeAluno} atingiu {totalFaltas} faltas nos últimos 7 dias.\n\nSistema de Controle de Ausência Escolar.",
+            IsBodyHtml = false
+        };
+
+        await client.SendMailAsync(mensagem);
+        _logger.LogInformation("Email de alerta enviado para {Destinatario}.", destinatario);
     }
 }
