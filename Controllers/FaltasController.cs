@@ -23,7 +23,6 @@ public class FaltasController : ControllerBase
     }
 
     // POST api/faltas/alunos
-    // Body: { "nome": "João", "email": "joao@escola.com" }
     [HttpPost("alunos")]
     public async Task<IActionResult> CriarAluno([FromBody] CriarAlunoRequest request)
     {
@@ -32,6 +31,21 @@ public class FaltasController : ControllerBase
 
         var aluno = await _faltaService.CriarAlunoAsync(request.Nome, request.Email);
         return CreatedAtAction(nameof(ObterResumo), new { id = aluno.Id }, aluno);
+    }
+
+    // DELETE api/faltas/alunos/{id}
+    [HttpDelete("alunos/{id}")]
+    public async Task<IActionResult> DeletarAluno(int id)
+    {
+        try
+        {
+            await _faltaService.DeletarAlunoAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
     }
 
     // GET api/faltas/alunos/{id}/resumo
@@ -50,7 +64,6 @@ public class FaltasController : ControllerBase
     }
 
     // POST api/faltas
-    // Body: { "alunoId": 1, "data": "2026-04-07", "quantidadeFaltas": 3 }
     [HttpPost]
     public async Task<IActionResult> RegistrarFalta([FromBody] RegistrarFaltaRequest request)
     {

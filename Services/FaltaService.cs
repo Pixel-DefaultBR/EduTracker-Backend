@@ -77,6 +77,15 @@ public class FaltaService
         return await _db.Alunos.ToListAsync();
     }
 
+    public async Task DeletarAlunoAsync(int alunoId)
+    {
+        var aluno = await _db.Alunos.FindAsync(alunoId)
+            ?? throw new KeyNotFoundException($"Aluno com Id {alunoId} não encontrado.");
+
+        _db.Alunos.Remove(aluno);
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<object> ObterResumoAlunoAsync(int alunoId)
     {
         var aluno = await _db.Alunos.FindAsync(alunoId)
